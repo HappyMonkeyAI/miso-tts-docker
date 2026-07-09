@@ -1,0 +1,29 @@
+# Secrets and local config
+.env
+.env.local
+
+# Model weights and caches (use Docker volumes instead)
+MisoTTS/
+
+# Generated audio
+output/*.wav
+data/*
+!data/.gitkeep
+
+# Private notes (not for publication)
+grok.txt
+setup-prompt.txt
+
+# Local tooling noise
+terminals/
+agent-tools/
+mcps/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

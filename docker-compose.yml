@@ -1,0 +1,48 @@
+x-misotts-common: &misotts-common
+  image: miso-tts:local
+  gpus: all
+  shm_size: "8gb"
+  environment: &misotts-env
+    HF_TOKEN: ${HF_TOKEN:-}
+    HUGGING_FACE_HUB_TOKEN: ${HF_TOKEN:-}
+    MISO_TTS_8B_MODEL: ${MISO_TTS_8B_MODEL:-MisoLabs/MisoTTS}
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
+  volumes: &misotts-volumes
+    - hf_cache:/root/.cache/huggingface
+    - torch_cache:/root/.cache/torch
+    - ./output:/app/output
+    - ./data:/app/data
+    - ./scripts:/app/scripts:ro
+  working_dir: /app
+
+services:
+  misotts:
+    <<: *misotts-common
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: miso-tts
+
+  demo:
+    <<: *misotts-common
+    container_name: miso-tts-demo
+    command: ["demo"]
+
+  generate:
+    <<: *misotts-common
+    container_name: miso-tts-generate
+    command: ["generate", "--text", "Hello from Miso TTS on your RTX 5090.", "--output", "/app/output/generated.wav"]
+
+  shell:
+    <<: *misotts-common
+    container_name: miso-tts-shell
+    stdin_open: true
+    tty: true
+    command: ["shell"]
+
+volumes:
+  hf_cache:
+    name: miso-hf-cache
+  torch_cache:
+    name: miso-torch-cache
