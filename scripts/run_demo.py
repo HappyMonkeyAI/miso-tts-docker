@@ -4,6 +4,9 @@ import os
 import shutil
 import sys
 
+if "/app" not in sys.path:
+    sys.path.insert(0, "/app")
+
 
 def _apply_torchaudio_patch() -> None:
     spec = importlib.util.spec_from_file_location(
@@ -18,21 +21,6 @@ def _apply_torchaudio_patch() -> None:
 
 _apply_torchaudio_patch()
 
-
-def _load_preflight_main():
-    spec = importlib.util.spec_from_file_location(
-        "preflight",
-        "/app/scripts/preflight.py",
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError("Could not load preflight.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.main
-
-
-if _load_preflight_main() != 0:
-    raise SystemExit(1)
 
 import run_misotts
 

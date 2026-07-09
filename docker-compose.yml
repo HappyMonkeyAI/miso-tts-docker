@@ -8,6 +8,7 @@ x-misotts-common: &misotts-common
     MISO_TTS_8B_MODEL: ${MISO_TTS_8B_MODEL:-MisoLabs/MisoTTS}
     NVIDIA_VISIBLE_DEVICES: all
     NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    PYTHONPATH: /app
   volumes: &misotts-volumes
     - hf_cache:/root/.cache/huggingface
     - torch_cache:/root/.cache/torch
