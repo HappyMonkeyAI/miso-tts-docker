@@ -1,0 +1,6 @@
+# TLS terminator for the web demo. Browsers require HTTPS (secure context) for
+# microphone access when not using http://localhost.
+:8443 {
+	tls /certs/cert.pem /certs/key.pem
+	reverse_proxy web:8000
+}

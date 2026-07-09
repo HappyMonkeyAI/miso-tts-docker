@@ -48,8 +48,10 @@ class SessionState:
 class SpeakRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=2000)
     session_id: Optional[str] = None
-    speaker: int = 0
+    speaker: int = Field(0, ge=0, le=7)
     max_audio_length_ms: int = 15_000
+    use_context: bool = True
+    reset_context: bool = False
 
 
 class SpeakResponse(BaseModel):
@@ -117,19 +119,24 @@ def speak(request: SpeakRequest) -> SpeakResponse:
         state = sessions.setdefault(session_id, SessionState())
 
     with state.lock:
+        if request.reset_context:
+            state.segments.clear()
+
+        context = list(state.segments) if request.use_context else []
         audio = generator.generate(
             text=request.text,
             speaker=request.speaker,
-            context=list(state.segments),
+            context=context,
             max_audio_length_ms=request.max_audio_length_ms,
         )
-        state.segments.append(
-            Segment(
-                text=request.text,
-                speaker=request.speaker,
-                audio=audio,
+        if request.use_context:
+            state.segments.append(
+                Segment(
+                    text=request.text,
+                    speaker=request.speaker,
+                    audio=audio,
+                )
             )
-        )
 
     wav = _wav_bytes(audio, sample_rate)
     return SpeakResponse(

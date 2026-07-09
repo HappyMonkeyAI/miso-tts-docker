@@ -27,6 +27,7 @@ services:
 
   miso-api:
     <<: *misotts-common
+    profiles: ["quality", "full"]
     container_name: miso-tts-api
     entrypoint: ["python", "/app/scripts/miso_api.py"]
     ports:
@@ -41,16 +42,41 @@ services:
       retries: 5
       start_period: 120s
 
+  pocket-api:
+    build:
+      context: ./pocket
+      dockerfile: Dockerfile
+    image: miso-pocket-tts:local
+    container_name: miso-pocket-api
+    ports:
+      - "${POCKET_API_PORT:-8090}:8090"
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      HUGGING_FACE_HUB_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - pocket_cache:/root/.cache/pocket_tts
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 300s
+
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
     image: miso-tts-web:local
     container_name: miso-tts-web
+    expose:
+      - "8000"
     ports:
       - "${WEB_PORT:-8000}:8000"
     environment:
       MISO_API_URL: ${MISO_API_URL:-http://miso-api:8080}
+      POCKET_API_URL: ${POCKET_API_URL:-http://pocket-api:8090}
+      TTS_BACKEND: ${TTS_BACKEND:-pocket}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://openrouter.ai/api/v1}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-google/gemma-2-9b-it:free}
@@ -58,10 +84,24 @@ services:
       WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
       WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
     depends_on:
-      miso-api:
+      pocket-api:
         condition: service_healthy
     volumes:
       - whisper_cache:/root/.cache/huggingface
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: miso-tts-caddy
+    ports:
+      - "${WEB_HTTPS_PORT:-8443}:8443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_started
 
   demo:
     <<: *misotts-common
@@ -87,3 +127,9 @@ volumes:
     name: miso-torch-cache
   whisper_cache:
     name: miso-whisper-cache
+  pocket_cache:
+    name: miso-pocket-cache
+  caddy_data:
+    name: miso-caddy-data
+  caddy_config:
+    name: miso-caddy-config
