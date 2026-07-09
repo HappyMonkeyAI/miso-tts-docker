@@ -73,11 +73,80 @@
       .right { border-left: none; border-top: 1px solid var(--border); }
     }
     .orb-wrap {
-      height: 220px;
+      height: 240px;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 8px 0 24px;
+      position: relative;
+      --viz-level: 0;
+      --viz-bass: 0;
+      --viz-mid: 0;
+      --viz-high: 0;
+    }
+    .orb-viz {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 240px;
+      height: 240px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .orb-viz.active { opacity: 1; }
+    .flare-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid rgba(52, 211, 153, calc(0.08 + var(--viz-level) * 0.55));
+      box-shadow:
+        0 0 calc(18px + var(--viz-level) * 70px) rgba(52, 211, 153, calc(0.15 + var(--viz-level) * 0.45)),
+        inset 0 0 calc(8px + var(--viz-bass) * 40px) rgba(110, 231, 183, calc(var(--viz-bass) * 0.25));
+      transform: scale(calc(0.92 + var(--viz-level) * 0.2 + var(--viz-bass) * 0.08));
+      transform-origin: center center;
+    }
+    .flare-ring-2 {
+      inset: -14px;
+      border-color: rgba(16, 185, 129, calc(0.06 + var(--viz-mid) * 0.4));
+      box-shadow:
+        0 0 calc(28px + var(--viz-mid) * 80px) rgba(16, 185, 129, calc(0.1 + var(--viz-mid) * 0.35)),
+        0 0 calc(50px + var(--viz-level) * 50px) rgba(52, 211, 153, calc(var(--viz-level) * 0.2));
+      transform: scale(calc(0.96 + var(--viz-mid) * 0.18 + var(--viz-level) * 0.06));
+      transform-origin: center center;
+    }
+    .flare-ring-3 {
+      inset: -32px;
+      border-width: 1px;
+      border-color: rgba(167, 243, 208, calc(0.04 + var(--viz-high) * 0.3));
+      box-shadow: 0 0 calc(40px + var(--viz-high) * 90px) rgba(110, 231, 183, calc(var(--viz-high) * 0.25));
+      transform: scale(calc(1 + var(--viz-high) * 0.14 + var(--viz-level) * 0.04));
+      transform-origin: center center;
+      opacity: calc(0.35 + var(--viz-level) * 0.65);
+    }
+    .flare-rays {
+      position: absolute;
+      inset: 0;
+    }
+    .flare-ray {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 3px;
+      height: calc(36px + var(--ray-level, 0) * 52px);
+      margin-left: -1.5px;
+      transform-origin: 50% 0%;
+      transform: rotate(var(--ray-angle)) translateY(calc(-18px - var(--ray-level, 0) * 40px));
+      background: linear-gradient(
+        to top,
+        rgba(52, 211, 153, calc(0.15 + var(--ray-level, 0) * 0.75)),
+        rgba(167, 243, 208, calc(0.05 + var(--ray-level, 0) * 0.35)) 55%,
+        transparent
+      );
+      border-radius: 999px;
+      filter: blur(0.5px);
+      opacity: calc(0.25 + var(--ray-level, 0) * 0.75);
     }
     .orb {
       width: 150px;
@@ -87,6 +156,7 @@
       display: grid;
       place-items: center;
       transition: all 0.5s ease;
+      z-index: 1;
     }
     .orb::before, .orb::after {
       content: "";
@@ -113,6 +183,28 @@
     .orb.listening::before { border-color: rgba(59, 130, 246, 0.35); transform: scale(1.04); }
     .orb.thinking::before { border-color: rgba(167, 139, 250, 0.35); transform: scale(1.06); }
     .orb.speaking::before { border-color: rgba(52, 211, 153, 0.35); transform: scale(1.08); }
+    .orb.speaking.viz-active,
+    .orb.speaking.viz-active .orb-core,
+    .orb.speaking.viz-active::before,
+    .orb.speaking.viz-active::after {
+      transition: none;
+    }
+    .orb.speaking.viz-active .orb-core {
+      transform: scale(calc(1 + var(--viz-level) * 0.14));
+      box-shadow:
+        0 0 calc(42px + var(--viz-level) * 90px) rgba(52, 211, 153, calc(0.45 + var(--viz-level) * 0.5)),
+        0 0 calc(70px + var(--viz-bass) * 110px) rgba(16, 185, 129, calc(var(--viz-bass) * 0.4));
+    }
+    .orb.speaking.viz-active::before {
+      border-color: rgba(52, 211, 153, calc(0.2 + var(--viz-level) * 0.6));
+      transform: scale(calc(1.02 + var(--viz-level) * 0.18 + var(--viz-bass) * 0.06));
+      box-shadow: 0 0 calc(20px + var(--viz-mid) * 50px) rgba(52, 211, 153, calc(var(--viz-mid) * 0.35));
+    }
+    .orb.speaking.viz-active::after {
+      border-color: rgba(110, 231, 183, calc(0.1 + var(--viz-high) * 0.4));
+      transform: scale(calc(1.04 + var(--viz-high) * 0.12 + var(--viz-level) * 0.05));
+      opacity: calc(0.35 + var(--viz-level) * 0.65);
+    }
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -310,7 +402,13 @@
     <div class="main">
       <section class="left">
         <div class="status-pill offline" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
-        <div class="orb-wrap">
+        <div class="orb-wrap" id="orbWrap">
+          <div class="orb-viz" id="orbViz" aria-hidden="true">
+            <div class="flare-ring flare-ring-1"></div>
+            <div class="flare-ring flare-ring-2"></div>
+            <div class="flare-ring flare-ring-3"></div>
+            <div class="flare-rays" id="flareRays"></div>
+          </div>
           <div class="orb offline" id="orb"><div class="orb-core"></div></div>
         </div>
         <div class="controls">
@@ -375,6 +473,9 @@
 
   <script>
     const orb = document.getElementById("orb");
+    const orbWrap = document.getElementById("orbWrap");
+    const orbViz = document.getElementById("orbViz");
+    const flareRays = document.getElementById("flareRays");
     const statusPill = document.getElementById("statusPill");
     const statusText = document.getElementById("statusText");
     const btnConnect = document.getElementById("btnConnect");
@@ -402,11 +503,125 @@
     let chunks = [];
     let audioCtx = null;
     let gainNode = null;
+    let analyserNode = null;
+    let freqData = null;
+    let timeData = null;
     let activeSource = null;
     let playbackGeneration = 0;
     let playing = false;
     let busy = false;
     let currentStatus = "offline";
+    let vizRaf = null;
+    const FLARE_RAY_COUNT = 12;
+
+    (function initFlareRays() {
+      for (let i = 0; i < FLARE_RAY_COUNT; i++) {
+        const ray = document.createElement("div");
+        ray.className = "flare-ray";
+        ray.style.setProperty("--ray-angle", `${(360 / FLARE_RAY_COUNT) * i}deg`);
+        flareRays.appendChild(ray);
+      }
+    })();
+
+    function ensureAudioGraph() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (!gainNode) {
+        gainNode = audioCtx.createGain();
+        gainNode.connect(audioCtx.destination);
+      }
+      if (!analyserNode) {
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 512;
+        analyserNode.smoothingTimeConstant = 0.82;
+        analyserNode.connect(gainNode);
+        freqData = new Uint8Array(analyserNode.frequencyBinCount);
+        timeData = new Uint8Array(analyserNode.fftSize);
+      }
+    }
+
+    function bandAverage(data, start, end) {
+      const i0 = Math.max(0, Math.floor(start));
+      const i1 = Math.min(data.length, Math.ceil(end));
+      if (i1 <= i0) return 0;
+      let sum = 0;
+      for (let i = i0; i < i1; i++) sum += data[i];
+      return sum / (i1 - i0);
+    }
+
+    function setVizVars(level, bass, mid, high) {
+      const targets = [orbWrap, orb];
+      for (const el of targets) {
+        el.style.setProperty("--viz-level", level.toFixed(3));
+        el.style.setProperty("--viz-bass", bass.toFixed(3));
+        el.style.setProperty("--viz-mid", mid.toFixed(3));
+        el.style.setProperty("--viz-high", high.toFixed(3));
+      }
+    }
+
+    function clearVizVars() {
+      const props = ["--viz-level", "--viz-bass", "--viz-mid", "--viz-high"];
+      for (const el of [orbWrap, orb]) {
+        for (const prop of props) el.style.removeProperty(prop);
+      }
+      flareRays.querySelectorAll(".flare-ray").forEach((ray) => {
+        ray.style.removeProperty("--ray-level");
+      });
+    }
+
+    function stopVisualizer() {
+      if (vizRaf) {
+        cancelAnimationFrame(vizRaf);
+        vizRaf = null;
+      }
+      orbViz.classList.remove("active");
+      orb.classList.remove("viz-active");
+      clearVizVars();
+    }
+
+    function startVisualizer() {
+      stopVisualizer();
+      if (!analyserNode) return;
+      orbViz.classList.add("active");
+      orb.classList.add("viz-active");
+
+      const rays = flareRays.querySelectorAll(".flare-ray");
+      const binCount = analyserNode.frequencyBinCount;
+
+      function tick() {
+        if (!playing || !analyserNode) {
+          stopVisualizer();
+          return;
+        }
+
+        analyserNode.getByteFrequencyData(freqData);
+        analyserNode.getByteTimeDomainData(timeData);
+
+        let sumSq = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const sample = (timeData[i] - 128) / 128;
+          sumSq += sample * sample;
+        }
+        const rms = Math.sqrt(sumSq / timeData.length);
+        const level = Math.min(1, rms * 4.2);
+
+        const bass = bandAverage(freqData, 1, binCount * 0.12) / 255;
+        const mid = bandAverage(freqData, binCount * 0.12, binCount * 0.45) / 255;
+        const high = bandAverage(freqData, binCount * 0.45, binCount) / 255;
+
+        setVizVars(level, bass, mid, high);
+
+        rays.forEach((ray, index) => {
+          const sliceStart = Math.floor((index / rays.length) * binCount * 0.65) + 1;
+          const sliceEnd = Math.floor(((index + 1) / rays.length) * binCount * 0.65) + 1;
+          const rayLevel = Math.min(1, (bandAverage(freqData, sliceStart, sliceEnd) / 255) * 1.35 + level * 0.25);
+          ray.style.setProperty("--ray-level", rayLevel.toFixed(3));
+        });
+
+        vizRaf = requestAnimationFrame(tick);
+      }
+
+      vizRaf = requestAnimationFrame(tick);
+    }
 
     function updateModeUi() {
       const fast = ttsBackendSelect.value === "pocket";
@@ -496,6 +711,7 @@
 
     function stopPlayback() {
       playbackGeneration += 1;
+      stopVisualizer();
       if (activeSource) {
         try { activeSource.stop(); } catch (_) { /* already ended */ }
         activeSource = null;
@@ -544,12 +760,8 @@
       stopPlayback();
       const generation = playbackGeneration;
 
-      if (!audioCtx) audioCtx = new AudioContext();
+      ensureAudioGraph();
       if (audioCtx.state === "suspended") await audioCtx.resume();
-      if (!gainNode) {
-        gainNode = audioCtx.createGain();
-        gainNode.connect(audioCtx.destination);
-      }
 
       const settings = currentSettings();
       gainNode.gain.value = settings.volume;
@@ -565,14 +777,16 @@
 
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(gainNode);
+      source.connect(analyserNode);
       activeSource = source;
       playing = true;
       setInputEnabled(false);
+      startVisualizer();
 
       await new Promise((resolve) => {
         source.onended = () => {
           if (generation === playbackGeneration) {
+            stopVisualizer();
             activeSource = null;
             playing = false;
             setInputEnabled(currentStatus === "listening");
