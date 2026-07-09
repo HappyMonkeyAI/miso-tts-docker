@@ -24,6 +24,44 @@ services:
       dockerfile: Dockerfile
     container_name: miso-tts
 
+  miso-api:
+    <<: *misotts-common
+    container_name: miso-tts-api
+    entrypoint: ["python", "/app/scripts/miso_api.py"]
+    ports:
+      - "${MISO_API_PORT:-8080}:8080"
+    environment:
+      <<: *misotts-env
+      MISO_API_PORT: "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: miso-tts-web:local
+    container_name: miso-tts-web
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      MISO_API_URL: ${MISO_API_URL:-http://miso-api:8080}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-google/gemma-2-9b-it:free}
+      WHISPER_MODEL: ${WHISPER_MODEL:-base.en}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE:-int8}
+    depends_on:
+      miso-api:
+        condition: service_healthy
+    volumes:
+      - whisper_cache:/root/.cache/huggingface
+
   demo:
     <<: *misotts-common
     container_name: miso-tts-demo
@@ -46,3 +84,5 @@ volumes:
     name: miso-hf-cache
   torch_cache:
     name: miso-torch-cache
+  whisper_cache:
+    name: miso-whisper-cache

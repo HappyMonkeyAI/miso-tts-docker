@@ -79,13 +79,23 @@ Dockerfile              # Image build, upstream clone, generator patch
 docker-compose.yml      # GPU, volumes, services
 scripts/
   entrypoint.sh         # demo | generate | shell
+  miso_api.py           # GPU HTTP API for web demo (persistent model)
   preflight.py          # HF + Llama access check
   patch_torchaudio.py   # soundfile save/load
   run_demo.py           # Patched demo entry
   generate.py           # Custom text CLI
+web/
+  src/main.py           # WebSocket gateway, Whisper STT, LLM
+  src/index.html        # Browser UI
 *.cmd                   # Windows launchers
 output/                 # Generated WAV (gitignored)
 ```
+
+## Web demo notes
+
+- Run `run-web.cmd` — starts `miso-api` (GPU) + `web` (CPU).
+- Do not run `miso-api` and CLI `demo`/`generate` on the same GPU simultaneously.
+- `MISO_API_URL` lets the web container target a remote GPU host.
 
 ## Hardware notes
 

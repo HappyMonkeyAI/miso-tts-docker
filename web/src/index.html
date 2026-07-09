@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miso TTS — Live Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #030712;
+      --card: rgba(10, 15, 30, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --success: #10b981;
+      --danger: #f43f5e;
+      --purple: #8b5cf6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.15), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.12), transparent 45%);
+    }
+    .shell {
+      width: min(920px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+    .header {
+      padding: 28px 32px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 {
+      font-family: Outfit, sans-serif;
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p { color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 800px) { .main { grid-template-columns: 1fr; } }
+    .left, .right {
+      padding: 28px 32px 32px;
+    }
+    .right {
+      border-left: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.15);
+    }
+    @media (max-width: 800px) {
+      .right { border-left: none; border-top: 1px solid var(--border); }
+    }
+    .orb-wrap {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0 24px;
+    }
+    .orb {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      transition: all 0.5s ease;
+    }
+    .orb::before, .orb::after {
+      content: "";
+      position: absolute;
+      inset: -18px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.5s ease;
+    }
+    .orb::after { inset: -36px; opacity: 0.5; }
+    .orb-core {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fff, #dbeafe 55%, #60a5fa 100%);
+      box-shadow: 0 0 40px rgba(96, 165, 250, 0.45);
+      z-index: 2;
+      transition: all 0.5s ease;
+    }
+    .orb.offline .orb-core { background: #374151; box-shadow: none; }
+    .orb.listening .orb-core { box-shadow: 0 0 50px rgba(59, 130, 246, 0.7); }
+    .orb.thinking .orb-core { background: radial-gradient(circle at 30% 30%, #fff, #ede9fe 55%, #a78bfa 100%); box-shadow: 0 0 50px rgba(167, 139, 250, 0.6); }
+    .orb.speaking .orb-core { background: radial-gradient(circle at 30% 30%, #fff, #d1fae5 55%, #34d399 100%); box-shadow: 0 0 55px rgba(52, 211, 153, 0.65); }
+    .orb.listening::before { border-color: rgba(59, 130, 246, 0.35); transform: scale(1.04); }
+    .orb.thinking::before { border-color: rgba(167, 139, 250, 0.35); transform: scale(1.06); }
+    .orb.speaking::before { border-color: rgba(52, 211, 153, 0.35); transform: scale(1.08); }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .status-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: currentColor;
+    }
+    .status-pill.online { color: var(--success); border-color: rgba(16, 185, 129, 0.25); }
+    .controls { display: flex; flex-direction: column; gap: 12px; }
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-family: Outfit, sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary.active { background: var(--danger); box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35); }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-mic {
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .btn-mic.recording {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+    .hint { color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+    .text-row { display: flex; gap: 8px; margin-top: 8px; }
+    .text-row input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+    }
+    .text-row input:focus { border-color: var(--accent); }
+    .panel-title {
+      font-family: Outfit, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .transcript {
+      height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 4px;
+    }
+    .bubble {
+      max-width: 92%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      line-height: 1.45;
+      font-size: 0.92rem;
+      animation: fadeUp 0.25s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+    .bubble.assistant {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+    .bubble .role {
+      display: block;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+    .footer-note {
+      padding: 14px 32px 22px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <h1>Miso TTS Live Demo</h1>
+      <p>Conversational voice powered by Miso TTS 8B — running locally in Docker on your Windows 11 machine with NVIDIA GPU passthrough.</p>
+    </div>
+
+    <div class="main">
+      <section class="left">
+        <div class="status-pill offline" id="statusPill"><span class="dot"></span><span id="statusText">Offline</span></div>
+        <div class="orb-wrap">
+          <div class="orb offline" id="orb"><div class="orb-core"></div></div>
+        </div>
+        <div class="controls">
+          <button class="btn btn-primary" id="btnConnect">Start Conversation</button>
+          <button class="btn btn-mic" id="btnMic" disabled>Hold to Talk</button>
+          <div class="text-row">
+            <input id="textInput" type="text" placeholder="Or type a message…" disabled />
+            <button class="btn btn-secondary" id="btnSend" disabled>Send</button>
+          </div>
+          <p class="hint">Speech is transcribed with Whisper in the web container, replies are generated by your configured LLM, and Miso TTS voices the assistant on your GPU.</p>
+        </div>
+      </section>
+
+      <section class="right">
+        <div class="panel-title">Conversation</div>
+        <div class="transcript" id="transcript"></div>
+      </section>
+    </div>
+
+    <div class="footer-note">
+      Tip: first Miso synthesis after startup can take a minute while the GPU model warms up. Keep replies short for snappier demos.
+    </div>
+  </div>
+
+  <script>
+    const orb = document.getElementById("orb");
+    const statusPill = document.getElementById("statusPill");
+    const statusText = document.getElementById("statusText");
+    const btnConnect = document.getElementById("btnConnect");
+    const btnMic = document.getElementById("btnMic");
+    const btnSend = document.getElementById("btnSend");
+    const textInput = document.getElementById("textInput");
+    const transcript = document.getElementById("transcript");
+
+    let ws = null;
+    let connected = false;
+    let mediaRecorder = null;
+    let chunks = [];
+    let audioCtx = null;
+    let playing = false;
+
+    function setState(state) {
+      orb.className = "orb " + (state || "offline");
+      const labels = {
+        offline: "Offline",
+        listening: "Listening",
+        thinking: "Thinking",
+        speaking: "Speaking",
+      };
+      statusText.textContent = labels[state] || "Offline";
+      statusPill.className = "status-pill " + (state === "offline" ? "offline" : "online");
+    }
+
+    function addBubble(role, text) {
+      const el = document.createElement("div");
+      el.className = "bubble " + role;
+      el.innerHTML = `<span class="role">${role}</span>${escapeHtml(text)}`;
+      transcript.appendChild(el);
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    async function playWavBase64(b64) {
+      if (!audioCtx) audioCtx = new AudioContext();
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer.slice(0));
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+      playing = true;
+      await new Promise((resolve) => {
+        source.onended = resolve;
+        source.start(0);
+      });
+      playing = false;
+    }
+
+    function connectWs() {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+      ws.onopen = () => {
+        connected = true;
+        btnConnect.textContent = "End Conversation";
+        btnConnect.classList.add("active");
+        btnMic.disabled = false;
+        btnSend.disabled = false;
+        textInput.disabled = false;
+      };
+
+      ws.onclose = () => {
+        connected = false;
+        setState("offline");
+        btnConnect.textContent = "Start Conversation";
+        btnConnect.classList.remove("active");
+        btnMic.disabled = true;
+        btnSend.disabled = true;
+        textInput.disabled = true;
+      };
+
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.event === "status") {
+          setState(msg.state);
+        } else if (msg.event === "transcript") {
+          addBubble(msg.role, msg.text);
+        } else if (msg.event === "audio") {
+          try {
+            await playWavBase64(msg.data);
+          } catch (err) {
+            console.error("Audio playback failed", err);
+          }
+        } else if (msg.event === "error") {
+          addBubble("assistant", `Error: ${msg.message}`);
+        }
+      };
+    }
+
+    async function startRecording() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      mediaRecorder.start();
+      btnMic.classList.add("recording");
+      btnMic.textContent = "Release to Send";
+    }
+
+    async function stopRecording() {
+      if (!mediaRecorder) return;
+      const recorder = mediaRecorder;
+      await new Promise((resolve) => {
+        recorder.onstop = resolve;
+        recorder.stop();
+        recorder.stream.getTracks().forEach((t) => t.stop());
+      });
+      btnMic.classList.remove("recording");
+      btnMic.textContent = "Hold to Talk";
+      mediaRecorder = null;
+
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const data = btoa(binary);
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ event: "audio", mime: "audio/webm", data }));
+      }
+    }
+
+    btnConnect.addEventListener("click", () => {
+      if (connected) {
+        ws?.send(JSON.stringify({ event: "hangup" }));
+        ws?.close();
+        return;
+      }
+      connectWs();
+    });
+
+    btnMic.addEventListener("mousedown", async () => {
+      if (!connected || playing) return;
+      try { await startRecording(); } catch (e) { alert("Microphone access required."); }
+    });
+    btnMic.addEventListener("mouseup", () => { if (mediaRecorder) stopRecording(); });
+    btnMic.addEventListener("mouseleave", () => { if (mediaRecorder) stopRecording(); });
+    btnMic.addEventListener("touchstart", async (e) => {
+      e.preventDefault();
+      if (!connected || playing) return;
+      try { await startRecording(); } catch (err) { alert("Microphone access required."); }
+    }, { passive: false });
+    btnMic.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      if (mediaRecorder) stopRecording();
+    });
+
+    function sendText() {
+      const text = textInput.value.trim();
+      if (!text || !connected) return;
+      ws.send(JSON.stringify({ event: "text", text }));
+      textInput.value = "";
+    }
+
+    btnSend.addEventListener("click", sendText);
+    textInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendText();
+    });
+  </script>
+</body>
+</html>

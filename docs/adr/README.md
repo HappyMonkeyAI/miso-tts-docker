@@ -9,6 +9,7 @@ Durable decisions for **miso-tts-docker**. Newest last.
 | [0003](0003-soundfile-audio-io-patch.md) | soundfile patch for torchaudio I/O | Accepted |
 | [0004](0004-huggingface-gated-llama-tokenizer.md) | Hugging Face gated Llama tokenizer | Accepted |
 | [0005](0005-clone-upstream-at-image-build.md) | Clone upstream at image build | Accepted |
+| [0006](0006-web-conversational-demo.md) | Web conversational demo architecture | Accepted |
 
 ## Format
 

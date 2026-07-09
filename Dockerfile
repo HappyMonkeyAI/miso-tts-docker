@@ -55,6 +55,7 @@ COPY scripts/patch_torchaudio.py /app/scripts/patch_torchaudio.py
 COPY scripts/preflight.py /app/scripts/preflight.py
 COPY scripts/run_demo.py /app/scripts/run_demo.py
 COPY scripts/generate.py /app/scripts/generate.py
+COPY scripts/miso_api.py /app/scripts/miso_api.py
 RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
 RUN mkdir -p /app/output /app/data

@@ -67,6 +67,27 @@ Output: `output\full_conversation.wav`
 
 First inference run downloads ~30–40 GB into the `miso-hf-cache` Docker volume. Later runs reuse the cache.
 
+## Web conversational demo
+
+Sesame-style browser demo: talk to an enthusiastic Miso assistant, with Whisper STT
+and your choice of LLM for replies — voiced by Miso TTS on your GPU.
+
+```cmd
+run-web.cmd
+```
+
+Open **http://localhost:8000**, click **Start Conversation**, then hold **Hold to Talk**
+or type a message.
+
+Optional: set `LLM_API_KEY` in `.env` (OpenRouter, LM Studio, Ollama OpenAI shim).
+Without it, built-in fallback replies still demo Miso TTS.
+
+To run the web UI on another machine while the GPU stays local:
+
+```env
+MISO_API_URL=http://YOUR_GPU_HOST:8080
+```
+
 ## Commands
 
 | Command | Description |
@@ -76,6 +97,7 @@ First inference run downloads ~30–40 GB into the `miso-hf-cache` Docker volume
 | `run-demo.cmd` | Multi-turn conversation demo |
 | `run-generate.cmd "Your text"` | Generate speech from custom text |
 | `run-generate.cmd "Next line" out.wav prompt.wav "prompt transcript"` | Voice continuation |
+| `run-web.cmd` | Start browser voice demo (`miso-api` + `web`) |
 | `shell.cmd` | Interactive shell inside the container |
 
 PowerShell scripts (`.ps1`) are also provided if your execution policy allows them.
@@ -86,6 +108,9 @@ PowerShell scripts (`.ps1`) are also provided if your execution policy allows th
 |----------|---------|-------------|
 | `HF_TOKEN` | — | Hugging Face token (required) |
 | `MISO_TTS_8B_MODEL` | `MisoLabs/MisoTTS` | Model repo or local path |
+| `MISO_API_URL` | `http://miso-api:8080` | GPU TTS API (for web demo) |
+| `LLM_BASE_URL` / `LLM_API_KEY` | OpenRouter defaults | LLM for assistant replies |
+| `WEB_PORT` | `8000` | Browser demo port |
 
 For lower VRAM (~11–12 GB), use the community INT4 build:
 
